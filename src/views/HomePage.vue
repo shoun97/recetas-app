@@ -17,24 +17,16 @@
           <div class="mantel-bar"></div>
           <v-img :src="recipe.url" height="200px" width="100%" />
           <v-card-title>{{ recipe.nombre }}</v-card-title>
-          <v-card-subtitle
-            >Creada por: {{ recipe.participante }}</v-card-subtitle
-          >
+          <v-card-subtitle>
+            Creada por: {{ recipe.participante }}
+          </v-card-subtitle>
           <v-card-text>
-            <strong>Descripción:</strong> {{ recipe.descripcion }}<br />
-            <strong>Ingredientes:</strong>
-            {{
-              recipe.ingredientes
-                ? recipe.ingredientes.join(", ")
-                : "No hay ingredientes disponibles"
-            }}<br />
-            <strong>Instrucciones:</strong> {{ recipe.instrucciones }}<br />
-            <strong>Tiempo de Preparación:</strong>
-            {{ recipe.tiempoPreparacion }} minutos<br />
-            <strong>Dificultad:</strong> {{ recipe.dificultad }}<br />
-            <strong>Votos:</strong> {{ recipe.votos }}
+            <strong>Descripción:</strong> {{ recipe.descripcion }}
           </v-card-text>
           <v-card-actions>
+            <v-btn @click="goToRecipeDetails(recipe._id)" color="primary">
+              Ver más detalles
+            </v-btn>
             <v-btn
               @click="vote(recipe._id, 1)"
               :loading="loading"
@@ -54,12 +46,15 @@
             <v-btn @click="editRecipe(recipe._id)" color="orange" icon>
               <v-icon>mdi-pencil</v-icon>
             </v-btn>
+            <v-btn @click="deleteRecipe(recipe._id)" color="red" icon>
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
           </v-card-actions>
         </v-card>
       </v-col>
     </v-row>
 
-    <!-- Botón flotante en la parte inferior con ícono de más -->
+    <!-- Botón flotante para añadir una nueva receta -->
     <v-btn
       color="primary"
       class="add-recipe-btn"
@@ -70,8 +65,7 @@
       right
       icon="mdi-plus"
       :loading="loading"
-    >
-    </v-btn>
+    ></v-btn>
   </v-container>
 </template>
 
@@ -84,10 +78,6 @@ interface Recipe {
   _id: string;
   nombre: string;
   descripcion: string;
-  ingredientes: string[];
-  instrucciones: string;
-  tiempoPreparacion: number;
-  dificultad: string;
   participante: string;
   votos: number;
   url: string;
@@ -105,12 +95,34 @@ export default defineComponent({
       loading.value = true;
       try {
         const response = await axios.get("api/recetas");
-        console.log("Recetas obtenidas:", response.data); // Log para verificar la estructura
-        recipes.value = response.data.recetas; // Asegúrate de que esta propiedad exista en tu respuesta
+        recipes.value = response.data.recetas;
       } catch (error) {
         console.error("Error al obtener las recetas:", error);
       }
       loading.value = false;
+    };
+
+    // Función para redirigir a la vista de detalles
+    const goToRecipeDetails = (id: string) => {
+      router.push(`/receta/${id}`);
+    };
+
+    // Función para eliminar una receta por ID
+    const deleteRecipe = async (id: string) => {
+      const confirmDelete = confirm(
+        "¿Estás seguro de que deseas eliminar esta receta?"
+      );
+      if (confirmDelete) {
+        loading.value = true;
+        try {
+          await axios.delete(`api/receta/${id}`);
+          recipes.value = recipes.value.filter((recipe) => recipe._id !== id);
+          console.log("Receta eliminada");
+        } catch (error) {
+          console.error("Error al eliminar la receta:", error);
+        }
+        loading.value = false;
+      }
     };
 
     // Llamar a la función fetchRecipes cuando el componente se monta
@@ -118,10 +130,6 @@ export default defineComponent({
 
     const goToAddRecipe = () => {
       router.push("/add-recipe");
-    };
-
-    const viewRecipe = (id: string) => {
-      router.push(`/recipe/${id}`);
     };
 
     const editRecipe = (id: string) => {
@@ -136,7 +144,6 @@ export default defineComponent({
         if (updatedRecipe) {
           updatedRecipe.votos = response.data.votos;
         }
-        console.log("Voto registrado:", response.data);
       } catch (error) {
         const axiosError = error as AxiosError;
         console.error("Error al votar:", axiosError.message);
@@ -144,7 +151,15 @@ export default defineComponent({
       loading.value = false;
     };
 
-    return { recipes, goToAddRecipe, viewRecipe, vote, editRecipe, loading };
+    return {
+      recipes,
+      goToAddRecipe,
+      goToRecipeDetails,
+      editRecipe,
+      deleteRecipe,
+      vote,
+      loading,
+    };
   },
 });
 </script>
@@ -178,11 +193,5 @@ export default defineComponent({
 .recipe-card .v-card-text {
   position: relative;
   z-index: 2;
-}
-
-.mantel-bar_text {
-  color: black !important;
-  font-weight: bolder !important;
-  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
 }
 </style>

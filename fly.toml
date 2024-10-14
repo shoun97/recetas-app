@@ -1,0 +1,28 @@
+# fly.toml app configuration file generated for recetas-app on 2024-10-12T22:20:02-03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'recetas-app'
+primary_region = 'scl'
+
+[build]
+
+[env]
+  PORT = '80'
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+  protocol = "tcp"
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+[[statics]]
+  guest_path = "/usr/share/nginx/html"
+  url_prefix = "/"
